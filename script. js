@@ -1,0 +1,212 @@
+
+(function () {
+  "use strict";
+ 
+  const STORAGE_KEY = "pizarron-ahorros:notes";
+  const RATES_KEY = "pizarron-ahorros:rates";
+  const NOTE_COLORS = ["yellow", "orange", "purple", "red"];
+ 
+  // ---- Elementos ----
+  const noteNameInput = document.getElementById("noteName");
+  const amountInput = document.getElementById("amountArs");
+  const currencyButtons = document.querySelectorAll(".currency-toggle__btn");
+  const resultValueEl = document.getElementById("resultValue");
+  const resultUnitEl = document.getElementById("resultUnit");
+  const addConversionBtn = document.getElementById("addConversionBtn");
+  const rateUsdInput = document.getElementById("rateUsd");
+  const rateEurInput = document.getElementById("rateEur");
+ 
+  const pinboardSurface = document.getElementById("pinboardSurface");
+  const pinboardEmpty = document.getElementById("pinboardEmpty");
+  const noteTemplate = document.getElementById("noteTemplate");
+ 
+  const quickNoteForm = document.getElementById("quickNoteForm");
+  const quickNoteText = document.getElementById("quickNoteText");
+ 
+  // ---- Estado ----
+  let selectedCurrency = "USD";
+  let rates = loadRates();
+  let notes = loadNotes();
+ 
+  // ---- Cotizaciones ----
+  function loadRates() {
+    try {
+      const raw = localStorage.getItem(RATES_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+      /* localStorage no disponible: seguimos con valores por defecto */
+    }
+    return { USD: 1000, EUR: 1080 };
+  }
+ 
+  function saveRates() {
+    try {
+      localStorage.setItem(RATES_KEY, JSON.stringify(rates));
+    } catch (e) {
+      /* si falla el guardado, la app sigue funcionando en memoria */
+    }
+  }
+ 
+  rateUsdInput.value = rates.USD;
+  rateEurInput.value = rates.EUR;
+ 
+  rateUsdInput.addEventListener("input", () => {
+    rates.USD = Number(rateUsdInput.value) || 0;
+    saveRates();
+    updateResult();
+  });
+ 
+  rateEurInput.addEventListener("input", () => {
+    rates.EUR = Number(rateEurInput.value) || 0;
+    saveRates();
+    updateResult();
+  });
+ 
+  // ---- Selector de moneda ----
+  currencyButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currencyButtons.forEach((b) => {
+        b.classList.remove("is-active");
+        b.setAttribute("aria-checked", "false");
+      });
+      btn.classList.add("is-active");
+      btn.setAttribute("aria-checked", "true");
+      selectedCurrency = btn.dataset.currency;
+      updateResult();
+    });
+  });
+ 
+  // ---- Cálculo de conversión ----
+  function convert(amountArs, currency) {
+    const rate = rates[currency] || 1;
+    if (!rate) return 0;
+    return amountArs / rate;
+  }
+ 
+  function formatMoney(value) {
+    return value.toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+ 
+  function currencyLabel(currency) {
+    return currency === "USD" ? "U$S" : "€";
+  }
+ 
+  function updateResult() {
+    const amount = Number(amountInput.value) || 0;
+    const converted = convert(amount, selectedCurrency);
+    resultValueEl.textContent = formatMoney(converted);
+    resultUnitEl.textContent = currencyLabel(selectedCurrency);
+  }
+ 
+  amountInput.addEventListener("input", updateResult);
+  updateResult();
+ 
+  // ---- Notas: almacenamiento ----
+  function loadNotes() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+      /* localStorage no disponible: arrancamos sin notas guardadas */
+    }
+    return [];
+  }
+ 
+  function saveNotes() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    } catch (e) {
+      /* si falla el guardado, las notas quedan solo en esta sesión */
+    }
+  }
+ 
+  function pickColor() {
+    return NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
+  }
+ 
+  function randomRotation() {
+    return `${(Math.random() * 6 - 3).toFixed(1)}deg`;
+  }
+ 
+  // ---- Notas: render ----
+  function renderNotes() {
+    pinboardSurface
+      .querySelectorAll(".note")
+      .forEach((el) => el.remove());
+ 
+    pinboardEmpty.style.display = notes.length ? "none" : "block";
+ 
+    notes.forEach((note) => {
+      const fragment = noteTemplate.content.cloneNode(true);
+      const article = fragment.querySelector(".note");
+      article.classList.add(`note--${note.color}`);
+      article.style.setProperty("--rot", note.rotation);
+      article.dataset.id = note.id;
+ 
+      const titleEl = fragment.querySelector(".note__title");
+      const bodyEl = fragment.querySelector(".note__body");
+      titleEl.textContent = note.title;
+      bodyEl.textContent = note.body;
+ 
+      fragment.querySelector(".note__delete").addEventListener("click", () => {
+        removeNote(note.id);
+      });
+ 
+      pinboardSurface.appendChild(fragment);
+    });
+  }
+ 
+  function addNote(title, body) {
+    notes.push({
+      id: Date.now() + Math.random().toString(16).slice(2),
+      title: title.trim() || "Sin nombre",
+      body: body.trim(),
+      color: pickColor(),
+      rotation: randomRotation(),
+    });
+    saveNotes();
+    renderNotes();
+  }
+ 
+  function removeNote(id) {
+    notes = notes.filter((n) => n.id !== id);
+    saveNotes();
+    renderNotes();
+  }
+ 
+  // ---- Botón: agregar conversión al pizarrón ----
+  addConversionBtn.addEventListener("click", () => {
+    const amount = Number(amountInput.value) || 0;
+    if (amount <= 0) {
+      amountInput.focus();
+      return;
+    }
+    const converted = convert(amount, selectedCurrency);
+    const title = noteNameInput.value.trim() || "Notita";
+    const body = `$${formatMoney(amount)} = ${formatMoney(converted)} ${currencyLabel(selectedCurrency)}`;
+ 
+    addNote(title, body);
+ 
+    noteNameInput.value = "";
+    amountInput.value = "";
+    updateResult();
+    noteNameInput.focus();
+  });
+ 
+  // ---- Formulario: nota rápida personalizada ----
+  quickNoteForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = quickNoteText.value.trim();
+    if (!text) return;
+    addNote(text, "");
+    quickNoteText.value = "";
+    quickNoteText.focus();
+  });
+ 
+  // ---- Primera carga ----
+  renderNotes();
+})();
+ 
