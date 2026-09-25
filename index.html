@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Pizarrón de Ahorros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+ 
+  <header class="app-header">
+    <h1>Mi Pizarrón de Ahorros</h1>
+    <p class="app-header__sub">Convertí tus pesos y guardá la cuenta en el pizarrón</p>
+  </header>
+ 
+  <main class="board-wrap">
+ 
+    <!-- SECCIÓN 1: CONVERSOR -->
+    <section class="converter" aria-labelledby="converter-title">
+      <div class="converter__card">
+        <h2 id="converter-title" class="converter__title">Nueva notita</h2>
+ 
+        <label class="field">
+          <span class="field__label">Nombre de la notita</span>
+          <input type="text" id="noteName" placeholder="Ej: Vacaciones, alquiler, ahorro del mes…" maxlength="40">
+        </label>
+ 
+        <label class="field">
+          <span class="field__label">Monto en pesos</span>
+          <div class="amount-row">
+            <span class="amount-row__prefix">$</span>
+            <input type="number" id="amountArs" placeholder="0" min="0" step="1" inputmode="decimal">
+          </div>
+        </label>
+ 
+        <div class="field">
+          <span class="field__label">Convertir a</span>
+          <div class="currency-toggle" role="radiogroup" aria-label="Moneda de destino">
+            <button type="button" class="currency-toggle__btn is-active" data-currency="USD" role="radio" aria-checked="true">U$S</button>
+            <button type="button" class="currency-toggle__btn" data-currency="EUR" role="radio" aria-checked="false">€</button>
+          </div>
+        </div>
+ 
+        <div class="result-box" id="resultBox">
+          <span class="result-box__value" id="resultValue">0,00</span>
+          <span class="result-box__unit" id="resultUnit">U$S</span>
+        </div>
+ 
+        <button type="button" class="btn btn--primary btn--block" id="addConversionBtn">Agregar al pizarrón</button>
+ 
+        <details class="rate-settings">
+          <summary>Editar cotización</summary>
+          <label class="field field--tight">
+            <span class="field__label">1 U$S = $ pesos</span>
+            <input type="number" id="rateUsd" min="1" step="1">
+          </label>
+          <label class="field field--tight">
+            <span class="field__label">1 € = $ pesos</span>
+            <input type="number" id="rateEur" min="1" step="1">
+          </label>
+        </details>
+      </div>
+    </section>
+ 
+    <!-- SECCIÓN 2: PIZARRÓN -->
+    <section class="pinboard" aria-labelledby="pinboard-title">
+      <h2 id="pinboard-title" class="sr-only">Pizarrón de notas</h2>
+ 
+      <div class="pinboard__surface" id="pinboardSurface">
+        <p class="pinboard__empty" id="pinboardEmpty">El pizarrón está vacío. Agregá tu primera notita ✎</p>
+        <!-- las notas se insertan acá con JS -->
+      </div>
+ 
+      <form class="quick-note" id="quickNoteForm">
+        <input type="text" id="quickNoteText" placeholder="Escribí una nota rápida…" maxlength="60" aria-label="Texto de la nota personalizada">
+        <button type="submit" class="btn btn--accent">Agregar</button>
+      </form>
+    </section>
+ 
+  </main>
+ 
+  <template id="noteTemplate">
+    <article class="note">
+      <button type="button" class="note__delete" aria-label="Eliminar nota">×</button>
+      <p class="note__title"></p>
+      <p class="note__body"></p>
+    </article>
+  </template>
+ 
+  <script src="script.js"></script>
+</body>
+</html>
+ 
